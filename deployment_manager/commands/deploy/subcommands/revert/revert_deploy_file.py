@@ -4,8 +4,10 @@ from rich.panel import Panel
 from rossum_api import APIClientError, AsyncRossumAPIClient
 
 from deployment_manager.commands.deploy.subcommands.revert.revert_object_deploy import (
+    RevertEmailTemplateDeploy,
     RevertEngineDeploy,
     RevertHookDeploy,
+    RevertLabelDeploy,
     RevertObjectDeploy,
     RevertQueueDeploy,
     RevertWorkspaceDeploy,
@@ -30,6 +32,8 @@ class RevertDeployFile(BaseModel):
     queues: list[RevertQueueDeploy] = []
     hooks: list[RevertHookDeploy] = []
     engines: list[RevertEngineDeploy] = []
+    labels: list[RevertLabelDeploy] = []
+    email_templates: list[RevertEmailTemplateDeploy] = []
 
     async def display_reverted_organization(self):
         if not self.deployed_org_id:
@@ -59,6 +63,38 @@ class RevertDeployFile(BaseModel):
 
         await gather_with_concurrency(*[hook_release.revert() for hook_release in self.hooks])
         self.detect_revert_phase_exceptions(self.hooks)
+
+    async def revert_email_templates(self):
+        await gather_with_concurrency(
+            *[
+                email_template_release.initialize(
+                    yaml=self.yaml,
+                    client=self.client,
+                    plan_only=self.plan_only,
+                )
+                for email_template_release in self.email_templates
+            ]
+        )
+
+        await gather_with_concurrency(
+            *[email_template_release.revert() for email_template_release in self.email_templates]
+        )
+        self.detect_revert_phase_exceptions(self.email_templates)
+
+    async def revert_labels(self):
+        await gather_with_concurrency(
+            *[
+                label_release.initialize(
+                    yaml=self.yaml,
+                    client=self.client,
+                    plan_only=self.plan_only,
+                )
+                for label_release in self.labels
+            ]
+        )
+
+        await gather_with_concurrency(*[label_release.revert() for label_release in self.labels])
+        self.detect_revert_phase_exceptions(self.labels)
 
     async def revert_engines(self):
         await gather_with_concurrency(

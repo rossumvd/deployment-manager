@@ -75,6 +75,10 @@ async def revert_release_file(
 
         await planned_release.revert_engines()
 
+        await planned_release.revert_email_templates()
+
+        await planned_release.revert_labels()
+
         await planned_release.revert_queues()
 
         await planned_release.revert_workspaces()
@@ -94,6 +98,10 @@ async def revert_release_file(
         await release.revert_hooks()
 
         await release.revert_engines()
+
+        await release.revert_email_templates()
+
+        await release.revert_labels()
 
         await release.revert_queues()
 
